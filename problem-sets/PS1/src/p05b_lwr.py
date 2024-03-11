@@ -18,10 +18,24 @@ def main(tau, train_path, eval_path):
 
     # *** START CODE HERE ***
     # Fit a LWR model
+    x_train, y_train = util.load_dataset(ds5_training_set_path, add_intercept=True)
+    x_valid, y_valid = util.load_dataset(ds5_valid_set_path, add_intercept=True)
+    clf = LocallyWeightedLinearRegression(tau=tau)
+    clf.fit(x_train, y_train)
+    y_pred = clf.predict(x_valid)
     # Get MSE value on the validation set
+    mse = np.mean((y_pred - y_eval)**2)
+    print(f'MSE={mse}')
     # Plot validation predictions on top of training set
+
     # No need to save predictions
     # Plot data
+    plt.figure()
+    plt.plot(x_train, y_train, 'bx', linewidth=2)
+    plt.plot(x_eval, y_pred, 'ro', linewidth=2)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.savefig('output/p05b.png')
     # *** END CODE HERE ***
 
 
@@ -45,6 +59,8 @@ class LocallyWeightedLinearRegression(LinearModel):
 
         """
         # *** START CODE HERE ***
+        self.x=x
+        self.y=y
         # *** END CODE HERE ***
 
     def predict(self, x):
@@ -57,4 +73,14 @@ class LocallyWeightedLinearRegression(LinearModel):
             Outputs of shape (m,).
         """
         # *** START CODE HERE ***
+        m,n = x.shape
+        y_pred = np.zeros(m)
+        for i in range(m):
+            W = np.exp(-np.linalg.norm(self.x - x[i,:], axis = 1) / (2 * self.tau ** 2)) #self.x is the training set
+                                                                                         #x is the prediction set                   
+            W = np.diag(W)
+            #print(W.shape)
+            theta = np.linalg.inv(self.x.T.dot(W).dot(self.x)).dot(self.x.T).dot(W).dot(self.y) #each prediction data have it's own theta
+            y_pred[i] = x[i,:].dot(theta)
+        return y_pred
         # *** END CODE HERE ***
